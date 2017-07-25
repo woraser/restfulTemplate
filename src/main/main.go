@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/unrolled/render"
-	"os"
 	"log"
+	"os"
 )
 
 const local string = "LOCAL"
@@ -21,14 +21,19 @@ func main() {
 		port = "3001"
 		version = "VERSION"
 	}
-	// reading version from file
-	version = "RELEASE"
-
-	db,db_err:= InitMySqlDataBase("root:root@tcp(127.0.0.1:3306)/awesome?charset=utf8")
+	//初始化配置文件
+	//默认文件名称:config.ini
+	configParse,cfg_err :=InitConfigParse("config.ini")
+	if cfg_err != nil{
+		log.Fatal(cfg_err)
+	}
+	//初始化mysql
+	db,db_err:= InitMySqlDataBase(configParse)
 	if db_err != nil{
 		log.Fatal(db_err)
 	}
-	redisClient,redis_err :=InitRedisClient("10.2.1.239:6379",0,200,2000)
+	//初始化redis
+	redisClient,redis_err :=InitRedisClient(configParse)
 	if redis_err != nil{
 		log.Fatal(redis_err)
 	}
@@ -41,6 +46,7 @@ func main() {
 		Port:    port,
 		DB:      db,
 		RedisClient:redisClient,
+		ConfigParse:configParse,
 	}
 	// start application
 	StartServer(ctx)

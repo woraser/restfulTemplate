@@ -6,6 +6,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/unrolled/render"
 	"time"
+	"github.com/robfig/config"
 )
 
 // AppContext holds application configuration data
@@ -16,6 +17,7 @@ type AppContext struct {
 	Port    string
 	DB      *sql.DB
 	RedisClient *redis.Pool
+	ConfigParse *config.Config
 }
 
 // Healthcheck will store information about its name and version
@@ -33,19 +35,23 @@ type Status struct {
 }
 
 /**init mysql db mysql_driver:_ "github.com/go-sql-driver/mysql"**/
-func InitMySqlDataBase(dataSourceName string)(*sql.DB,error){
-	if dataSourceName == ""{
-		dataSourceName = "root:root@tcp(127.0.0.1:3306)/awesome?charset=utf8"
-	}
+func InitMySqlDataBase(configParse *config.Config)(*sql.DB,error){
+	dataSourceName,_ := configParse.String("mysql","dataSourceName")
+	MaxIdle,_ := configParse.Int("mysql","MaxIdle")
+	MaxOpen,_ := configParse.Int("mysql","MaxOpen")
 	db, _ := sql.Open("mysql", dataSourceName)
-	db.SetMaxIdleConns(100)                 //最大空闲连接数
-	db.SetMaxOpenConns(200)               //最大活动连接数
-	db.SetConnMaxLifetime(300 * time.Second) //连接超时时间
+	db.SetMaxIdleConns(MaxIdle)                 //最大空闲连接数
+	db.SetMaxOpenConns(MaxOpen)               //最大活动连接数
+	db.SetConnMaxLifetime((60*60*12) * time.Second) //连接超时时间
 	return db,nil
 }
 
 //init redis client
-func InitRedisClient(REDIS_HOST string,REDIS_DB,MaxIdle,MaxActive int)(*redis.Pool,error){
+func InitRedisClient(configParse *config.Config)(*redis.Pool,error){
+	REDIS_HOST,_ := configParse.String("redis","REDIS_HOST")
+	REDIS_DB,_ := configParse.Int("redis","REDIS_DB")
+	MaxIdle,_ := configParse.Int("redis","MaxIdle")
+	MaxActive,_ := configParse.Int("redis","MaxActive")
 
 	RedisClient := &redis.Pool{
 		// 从配置文件获取maxidle以及maxactive，取不到则用后面的默认值
@@ -64,5 +70,12 @@ func InitRedisClient(REDIS_HOST string,REDIS_DB,MaxIdle,MaxActive int)(*redis.Po
 		},
 	}
 	return RedisClient,nil
+
+}
+
+//初始化配置文件对象 默认:config.ini
+func InitConfigParse(fileName string)(*config.Config,error){
+	configParse, error := config.ReadDefault(fileName)
+	return configParse,error
 
 }
