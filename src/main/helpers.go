@@ -7,6 +7,7 @@ import (
 	"github.com/unrolled/render"
 	"time"
 	"github.com/robfig/config"
+	"os"
 )
 
 // AppContext holds application configuration data
@@ -75,7 +76,8 @@ func InitRedisClient(configParse *config.Config)(*redis.Pool,error){
 
 //初始化配置文件对象 默认:config.ini
 func InitConfigParse(fileName string)(*config.Config,error){
-	configParse, error := config.ReadDefault(fileName)
+	location,_:=os.Getwd()
+	configParse, error := config.ReadDefault(location+"/src/main/"+fileName)
 	return configParse,error
 
 }
